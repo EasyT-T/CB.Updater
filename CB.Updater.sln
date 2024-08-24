@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{5DD0DAE7-1D3C-4AD2-9CCD-AE1288FA2CD0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CB.Updater", "CB.Updater\CB.Updater.csproj", "{5DD0DAE7-1D3C-4AD2-9CCD-AE1288FA2CD0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateJsonCreator", "UpdateJsonCreator\UpdateJsonCreator.csproj", "{EA78ACD9-E81B-4A4C-92E3-1CED4E7983BD}"
 EndProject
