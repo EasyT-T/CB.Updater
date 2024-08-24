@@ -6,6 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Creator</RootNamespace>
+        <PublishAot>true</PublishAot>
+        <RunAOTCompilation>true</RunAOTCompilation>
     </PropertyGroup>
 
 </Project>
