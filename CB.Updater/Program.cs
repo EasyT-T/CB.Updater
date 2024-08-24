@@ -123,6 +123,8 @@ internal static class Program
         {
             LogUtil.Error("Update failed.");
         }
+
+        File.Delete("update.info");
     }
 
     private static void HideConsole()
