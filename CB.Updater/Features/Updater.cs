@@ -46,12 +46,22 @@ public class Updater(Uri address)
 
         foreach (var file in Directory.GetFiles(sourceDir))
         {
+            if (file is "update.json" or "updating.lock")
+            {
+                continue;
+            }
+
             var destFile = Path.Combine(targetDir, Path.GetFileName(file));
             File.Copy(file, destFile, true);
         }
 
         foreach (var subDir in Directory.GetDirectories(sourceDir))
         {
+            if (subDir == "Backup")
+            {
+                continue;
+            }
+
             var destSubDir = Path.Combine(targetDir, Path.GetFileName(subDir));
             CopyDirectory(subDir, destSubDir);
         }
@@ -308,6 +318,7 @@ public class Updater(Uri address)
             return false;
         }
 
+        LogUtil.Info($"Successfully downloaded file {path}.");
         return true;
     }
 

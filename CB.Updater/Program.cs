@@ -56,86 +56,101 @@ internal static class Program
 
     private static bool CheckInstance()
     {
-        return !File.Exists("updating.lock") && !File.Exists("update.json");
+        return !File.Exists("updating.lock");
     }
 
     private static async Task GetUpdateInfo(string address, string output, bool batchmode)
     {
-        LogUtil.SetOutputPath(output);
-
-        if (batchmode)
+        try
         {
-            HideConsole();
+            LogUtil.SetOutputPath(output);
+
+            if (batchmode)
+            {
+                HideConsole();
+            }
+
+            var updater = new Updater(new Uri(address));
+
+            if (!await updater.Connect())
+            {
+                return;
+            }
+
+            var updateInfo = await updater.GetUpdateInfo();
+
+            if (updateInfo == null)
+            {
+                return;
+            }
+
+            var jsonText = JsonSerializer.Serialize(updateInfo, typeof(UpdateInfoResponse), SourceGenerationContext.Default);
+
+            await File.WriteAllTextAsync("update.json", jsonText);
         }
-
-        var updater = new Updater(new Uri(address));
-
-        if (!await updater.Connect())
+        catch (Exception e)
         {
-            return;
+            LogUtil.Error("FATAL ERROR: " + e);
         }
-
-        var updateInfo = await updater.GetUpdateInfo();
-
-        if (updateInfo == null)
-        {
-            return;
-        }
-
-        var jsonText = JsonSerializer.Serialize(updateInfo, typeof(UpdateInfoResponse), SourceGenerationContext.Default);
-
-        await File.WriteAllTextAsync("update.json", jsonText);
     }
 
     private static async Task Update(string address, string output, bool batchmode)
     {
-        LogUtil.SetOutputPath(output);
-
-        if (batchmode)
+        try
         {
-            HideConsole();
-        }
+            LogUtil.SetOutputPath(output);
 
-        File.Create("updating.lock").Close();
+            if (batchmode)
+            {
+                HideConsole();
+            }
 
-        var updater = new Updater(new Uri(address));
+            File.Create("updating.lock").Close();
 
-        if (!await updater.Connect())
-        {
+            var updater = new Updater(new Uri(address));
+
+            if (!await updater.Connect())
+            {
+                File.Delete("updating.lock");
+                return;
+            }
+
+            if (!File.Exists("update.json"))
+            {
+                LogUtil.Error("Update failed: please get update info first.");
+                File.Delete("updating.lock");
+                return;
+            }
+
+            var jsonText = await File.ReadAllTextAsync("update.json");
+            var updateInfo = JsonSerializer.Deserialize(jsonText, SourceGenerationContext.Default.UpdateInfoResponse);
+
+            if (updateInfo == null)
+            {
+                LogUtil.Error("Update failed: update info is invalid.");
+                File.Delete("updating.lock");
+                return;
+            }
+
+            var result = await updater.Update(updateInfo);
+
+            if (!result)
+            {
+                LogUtil.Error("Update failed.");
+                File.Delete("updating.lock");
+                return;
+            }
+
+            File.Move("Changelog_New.txt", "Changelog.txt", true);
+            File.Delete("update.json");
             File.Delete("updating.lock");
-            return;
-        }
 
-        if (!File.Exists("update.json"))
+            Process.Start(updateInfo.GameFile);
+        }
+        catch (Exception e)
         {
-            LogUtil.Error("Update failed: please get update info first.");
-            File.Delete("updating.lock");
-            return;
+            LogUtil.Error("FATAL ERROR: " + e);
         }
-
-        var jsonText = await File.ReadAllTextAsync("update.json");
-        var updateInfo = JsonSerializer.Deserialize(jsonText, SourceGenerationContext.Default.UpdateInfoResponse);
-
-        if (updateInfo == null)
-        {
-            LogUtil.Error("Update failed: update info is invalid.");
-            File.Delete("updating.lock");
-            return;
-        }
-
-        var result = await updater.Update(updateInfo);
-
-        if (!result)
-        {
-            LogUtil.Error("Update failed.");
-            File.Delete("updating.lock");
-            return;
-        }
-
-        File.Delete("update.json");
-        File.Delete("updating.lock");
-
-        Process.Start(updateInfo.GameFile);
     }
 
     private static void HideConsole()
