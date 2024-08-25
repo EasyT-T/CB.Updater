@@ -18,7 +18,11 @@ internal static class Program
         LogUtil.Info("Made by EasyT_T (https://github.com/EasyT-T)");
         LogUtil.Info("Special thanks to ZiYueCommentary (https://github.com/ZiYueCommentary)");
 
-        CheckInstance();
+        if (!CheckInstance())
+        {
+            LogUtil.Error("Do not open multiple updater in the same directory.");
+            return -1;
+        }
 
         var rootCommand = new RootCommand(Description);
 
@@ -50,26 +54,9 @@ internal static class Program
         return await rootCommand.InvokeAsync(args);
     }
 
-    private static void CheckInstance()
+    private static bool CheckInstance()
     {
-        var currentProcess = Process.GetCurrentProcess();
-        var processes = Process.GetProcessesByName(currentProcess.ProcessName);
-
-        foreach (var process in processes)
-        {
-            if (process.Id == currentProcess.Id)
-            {
-                continue;
-            }
-
-            if (currentProcess.MainModule?.FileName != process.MainModule?.FileName)
-            {
-                continue;
-            }
-
-            process.CloseMainWindow();
-            process.Close();
-        }
+        return !File.Exists("updating.lock") && !File.Exists("update.json");
     }
 
     private static async Task GetUpdateInfo(string address, string output, bool batchmode)
@@ -109,16 +96,20 @@ internal static class Program
             HideConsole();
         }
 
+        File.Create("updating.lock").Close();
+
         var updater = new Updater(new Uri(address));
 
         if (!await updater.Connect())
         {
+            File.Delete("updating.lock");
             return;
         }
 
         if (!File.Exists("update.json"))
         {
             LogUtil.Error("Update failed: please get update info first.");
+            File.Delete("updating.lock");
             return;
         }
 
@@ -128,6 +119,7 @@ internal static class Program
         if (updateInfo == null)
         {
             LogUtil.Error("Update failed: update info is invalid.");
+            File.Delete("updating.lock");
             return;
         }
 
@@ -136,9 +128,12 @@ internal static class Program
         if (!result)
         {
             LogUtil.Error("Update failed.");
+            File.Delete("updating.lock");
+            return;
         }
 
         File.Delete("update.json");
+        File.Delete("updating.lock");
 
         Process.Start(updateInfo.GameFile);
     }
