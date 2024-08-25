@@ -95,19 +95,9 @@ internal static class Program
             return;
         }
 
-        var currentVersionPath = Path.Combine(Directory.GetCurrentDirectory(), "version");
-        var currentVersion = await File.ReadAllTextAsync(currentVersionPath);
+        var jsonText = JsonSerializer.Serialize(updateInfo, typeof(UpdateInfoResponse), SourceGenerationContext.Default);
 
-        if (updateInfo.LatestVersion == currentVersion)
-        {
-            await File.WriteAllTextAsync("update.info", "###NO NEW UPDATES###");
-        }
-        else
-        {
-            var jsonText = JsonSerializer.Serialize(updateInfo, typeof(UpdateInfoResponse), SourceGenerationContext.Default);
-
-            await File.WriteAllTextAsync("update.info", jsonText);
-        }
+        await File.WriteAllTextAsync("update.info", jsonText);
     }
 
     private static async Task Update(string address, string output, bool batchmode)

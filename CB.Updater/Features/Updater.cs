@@ -183,9 +183,6 @@ public class Updater(Uri address)
         await Task.WhenAll(downloadTasks);
         DeleteBackup(backupDirectory);
 
-        var currentVersionPath = Path.Combine(Directory.GetCurrentDirectory(), "version");
-        await File.WriteAllTextAsync(currentVersionPath, updateInfo.LatestVersion, cancelToken.Token);
-
         httpClient?.Dispose();
 
         LogUtil.Info("Successfully updated.");
