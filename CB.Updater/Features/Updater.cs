@@ -217,7 +217,7 @@ public class Updater(Uri address)
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        await File.WriteAllTextAsync("Changelog.txt", content);
+        await File.WriteAllTextAsync("Changelog_New.txt", content);
     }
 
     public async Task<UpdateInfoResponse?> GetUpdateInfo()

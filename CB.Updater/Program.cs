@@ -97,7 +97,7 @@ internal static class Program
 
         var jsonText = JsonSerializer.Serialize(updateInfo, typeof(UpdateInfoResponse), SourceGenerationContext.Default);
 
-        await File.WriteAllTextAsync("update.info", jsonText);
+        await File.WriteAllTextAsync("update.json", jsonText);
     }
 
     private static async Task Update(string address, string output, bool batchmode)
@@ -116,13 +116,13 @@ internal static class Program
             return;
         }
 
-        if (!File.Exists("update.info"))
+        if (!File.Exists("update.json"))
         {
             LogUtil.Error("Update failed: please get update info first.");
             return;
         }
 
-        var jsonText = await File.ReadAllTextAsync("update.info");
+        var jsonText = await File.ReadAllTextAsync("update.json");
         var updateInfo = JsonSerializer.Deserialize(jsonText, SourceGenerationContext.Default.UpdateInfoResponse);
 
         if (updateInfo == null)
@@ -138,7 +138,9 @@ internal static class Program
             LogUtil.Error("Update failed.");
         }
 
-        File.Delete("update.info");
+        File.Delete("update.json");
+
+        Process.Start(updateInfo.GameFile);
     }
 
     private static void HideConsole()
