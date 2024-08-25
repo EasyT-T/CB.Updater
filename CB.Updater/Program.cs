@@ -98,7 +98,7 @@ internal static class Program
         var currentVersionPath = Path.Combine(Directory.GetCurrentDirectory(), "version");
         var currentVersion = await File.ReadAllTextAsync(currentVersionPath);
 
-        if (updateInfo.LastedVersion == currentVersion)
+        if (updateInfo.LatestVersion == currentVersion)
         {
             await File.WriteAllTextAsync("update.info", "###NO NEW UPDATES###");
         }

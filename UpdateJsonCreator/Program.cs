@@ -63,7 +63,7 @@ internal static class Program
         var updateInfo = new UpdateInfoResponse
         {
             GameFile = gameFileName,
-            LastedVersion = version,
+            LatestVersion = version,
             IncludeDirectories = includeDirectories,
             UpdateFiles = gameFileDictionary,
         };

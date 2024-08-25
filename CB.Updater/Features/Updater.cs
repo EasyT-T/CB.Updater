@@ -184,7 +184,7 @@ public class Updater(Uri address)
         DeleteBackup(backupDirectory);
 
         var currentVersionPath = Path.Combine(Directory.GetCurrentDirectory(), "version");
-        await File.WriteAllTextAsync(currentVersionPath, updateInfo.LastedVersion, cancelToken.Token);
+        await File.WriteAllTextAsync(currentVersionPath, updateInfo.LatestVersion, cancelToken.Token);
 
         httpClient?.Dispose();
 
