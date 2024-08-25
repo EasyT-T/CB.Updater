@@ -145,11 +145,16 @@ internal static class Program
             File.Delete("update.json");
             File.Delete("updating.lock");
 
+            await Task.Delay(1000);
             Process.Start(updateInfo.GameFile);
         }
         catch (Exception e)
         {
             LogUtil.Error("FATAL ERROR: " + e);
+            File.Delete("updating.lock");
+
+            //Updater.RevertToBackup("Backup");
+            //Updater.DeleteBackup("Backup");
         }
     }
 

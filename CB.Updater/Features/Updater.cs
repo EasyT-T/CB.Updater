@@ -22,21 +22,37 @@ public class Updater(Uri address)
         return BitConverter.ToString(hash).Replace("-", "").ToLower();
     }
 
-    private static void DeleteDirectory(string directory)
+    private static void DeleteDirectory(string directory, bool safeMode = false)
     {
         foreach (var filePath in Directory.GetFiles(directory))
         {
-            if (filePath == Process.GetCurrentProcess().MainModule?.FileName)
+            if (safeMode && (filePath.EndsWith(Process.GetCurrentProcess().MainModule?.FileName!) || filePath.EndsWith(".log")))
             {
                 continue;
             }
 
-            File.Delete(filePath);
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (Exception)
+            {
+                LogUtil.Warn($"Unable delete file {filePath}");
+            }
+
         }
 
         foreach (var subDir in Directory.GetDirectories(directory))
         {
+            var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), subDir);
+
+            if (safeMode && relativePath == "Backup")
+            {
+                continue;
+            }
+
             DeleteDirectory(subDir);
+            Directory.Delete(subDir);
         }
     }
 
@@ -46,18 +62,28 @@ public class Updater(Uri address)
 
         foreach (var file in Directory.GetFiles(sourceDir))
         {
-            if (file is "update.json" or "updating.lock")
+            if (file.EndsWith("update.json")  || file.EndsWith("updating.lock"))
             {
                 continue;
             }
 
             var destFile = Path.Combine(targetDir, Path.GetFileName(file));
-            File.Copy(file, destFile, true);
+
+            try
+            {
+                File.Copy(file, destFile, true);
+            }
+            catch (Exception)
+            {
+                LogUtil.Warn($"Unable copy file {file}");
+            }
         }
 
         foreach (var subDir in Directory.GetDirectories(sourceDir))
         {
-            if (subDir == "Backup")
+            var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), subDir);
+
+            if (relativePath == "Backup")
             {
                 continue;
             }
@@ -132,7 +158,6 @@ public class Updater(Uri address)
 
     public async Task<bool> Update(UpdateInfoResponse updateInfo)
     {
-
         var downloadTasks = new List<Task<bool>>();
         var cancelToken = new CancellationTokenSource();
 
@@ -147,11 +172,14 @@ public class Updater(Uri address)
 
             if (updateInfo.IncludeDirectories.All(x => !relativePath.StartsWith(x)))
             {
+                LogUtil.Info($"Ignore {relativePath}");
                 continue;
             }
 
-            if (!updateInfo.UpdateFiles!.TryGetValue(relativePath.ToLower(), out var md5))
+            if (!updateInfo.UpdateFiles!.TryGetValue(relativePath, out var md5))
             {
+                LogUtil.Info($"Delete {relativePath}");
+
                 fileInfo.Delete();
                 updateInfo.UpdateFiles.Remove(relativePath.ToLower());
                 continue;
@@ -159,6 +187,8 @@ public class Updater(Uri address)
 
             if (GetFileMd5(fileInfo.FullName) == md5)
             {
+                LogUtil.Info($"Skip {relativePath}");
+
                 continue;
             }
 
@@ -182,7 +212,7 @@ public class Updater(Uri address)
             await Task.WhenAll(downloadTasks);
 
             RevertToBackup(backupDirectory);
-            DeleteBackup(backupDirectory);
+            DeleteBackup(backupDirectory, true);
 
             httpClient?.Dispose();
 
@@ -305,6 +335,14 @@ public class Updater(Uri address)
         try
         {
             var fileBytes = await response.Content.ReadAsByteArrayAsync(token);
+
+            var directoryPath = Path.GetDirectoryName(path);
+
+            if (!string.IsNullOrEmpty(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
             await File.WriteAllBytesAsync(path, fileBytes, token);
         }
         catch (OperationCanceledException)
@@ -313,9 +351,9 @@ public class Updater(Uri address)
         }
         catch (Exception e)
         {
-            LogUtil.Error(e.ToString());
-            LogUtil.Error("Unable to download file: IO exception.");
-            return false;
+            LogUtil.Warn(e.ToString());
+            LogUtil.Warn("Unable to download file: IO exception. (Skip)");
+            return true; //Skip it.
         }
 
         LogUtil.Info($"Successfully downloaded file {path}.");
@@ -333,14 +371,15 @@ public class Updater(Uri address)
         return tempPath;
     }
 
-    private static void RevertToBackup(string backupDirectory)
+    internal static void RevertToBackup(string backupDirectory)
     {
         DeleteDirectory(Directory.GetCurrentDirectory());
         CopyDirectory(backupDirectory, Directory.GetCurrentDirectory());
     }
 
-    private static void DeleteBackup(string backupDirectory)
+    internal static void DeleteBackup(string backupDirectory, bool safeMode = false)
     {
-        DeleteDirectory(backupDirectory);
+        DeleteDirectory(backupDirectory, safeMode);
+        Directory.Delete(backupDirectory);
     }
 }

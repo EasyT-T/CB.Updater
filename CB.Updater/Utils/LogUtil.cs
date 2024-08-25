@@ -3,6 +3,7 @@
 public static class LogUtil
 {
     private static string OutputPath { get; set; } = string.Empty;
+    private static readonly object FileLock = new();
 
     public static void SetOutputPath(string path)
     {
@@ -16,9 +17,14 @@ public static class LogUtil
         Console.WriteLine($"[{prefix}]" + message);
         Console.ForegroundColor = ConsoleColor.Gray;
 
-        if (!string.IsNullOrEmpty(OutputPath))
+        if (string.IsNullOrEmpty(OutputPath))
         {
-            Task.Run(() => File.AppendAllText(OutputPath, "\r\n" + message)).Wait();
+            return;
+        }
+
+        lock (FileLock)
+        {
+            File.AppendAllText(OutputPath, "\r\n" + message);
         }
     }
 
