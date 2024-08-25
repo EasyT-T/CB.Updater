@@ -18,6 +18,8 @@ internal static class Program
         LogUtil.Info("Made by EasyT_T (https://github.com/EasyT-T)");
         LogUtil.Info("Special thanks to ZiYueCommentary (https://github.com/ZiYueCommentary)");
 
+        CheckInstance();
+
         var rootCommand = new RootCommand(Description);
 
         var addressArgument = new Argument<string>("address", "The address of update server.");
@@ -46,6 +48,28 @@ internal static class Program
         updateCommand.SetHandler(async (address, output, batchmode) => { await Update(address, output, batchmode);}, addressArgument, outputOption, batchmodeOption);
 
         return await rootCommand.InvokeAsync(args);
+    }
+
+    private static void CheckInstance()
+    {
+        var currentProcess = Process.GetCurrentProcess();
+        var processes = Process.GetProcessesByName(currentProcess.ProcessName);
+
+        foreach (var process in processes)
+        {
+            if (process.Id == currentProcess.Id)
+            {
+                continue;
+            }
+
+            if (currentProcess.MainModule?.FileName != process.MainModule?.FileName)
+            {
+                continue;
+            }
+
+            process.CloseMainWindow();
+            process.Close();
+        }
     }
 
     private static async Task GetUpdateInfo(string address, string output, bool batchmode)
