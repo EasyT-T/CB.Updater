@@ -18,7 +18,7 @@ public static class LogUtil
 
         if (!string.IsNullOrEmpty(OutputPath))
         {
-            File.AppendAllText(OutputPath, message);
+            Task.Run(() => File.AppendAllText(OutputPath, "\r\n" + message)).Wait();
         }
     }
 
